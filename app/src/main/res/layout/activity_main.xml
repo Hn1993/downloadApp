@@ -42,4 +42,14 @@
         android:background="@color/colorPrimary"
         android:text="刷新"
         android:layout_height="50dp" />
+
+    <Button
+
+        android:id="@+id/tap"
+        android:layout_below="@+id/server_refresh"
+        android:layout_marginTop="30dp"
+        android:layout_width="match_parent"
+        android:background="@color/colorPrimary"
+        android:text="模拟点击"
+        android:layout_height="50dp" />
 </RelativeLayout>
