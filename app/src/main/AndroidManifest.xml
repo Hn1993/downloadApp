@@ -15,10 +15,14 @@
     <uses-permission android:name="android.permission.INJECT_EVENTS"
         tools:ignore="ProtectedPermissions" />
 
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
     <!-- Required -->
     <permission
         android:name="com.an.downloadapp.permission.JPUSH_MESSAGE"
         android:protectionLevel="signature" />
+
+
 
     <!-- Required  一些系统要求的权限，如访问网络等-->
     <uses-permission android:name="com.an.downloadapp.permission.JPUSH_MESSAGE" />
@@ -101,6 +105,16 @@
             </intent-filter>
         </service>
 
+
+        <receiver android:name=".AppReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </receiver>
+
+        <service android:name=".AppService">
+        </service>
     </application>
 
 </manifest>

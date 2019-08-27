@@ -59,12 +59,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         btDownload.setOnClickListener(this);
         btRefresh.setOnClickListener(this);
         tap.setOnClickListener(this);
-//        try {
-//            Process p =Runtime.getRuntime().exec("su");
-//            Log.e("TAG","p="+p);
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
+
+
+        if (!Utils.isServiceExisted(this,"com.an.downloadapp.AppService")){
+            //启动Service
+            Intent intent = new Intent(this, AppService.class);
+            startService(intent);
+        }
+
+
+
+
         AndPermission.with(this)
                 .runtime()
                 .permission(Permission.Group.STORAGE)
