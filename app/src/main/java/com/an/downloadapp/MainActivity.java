@@ -1,14 +1,26 @@
 package com.an.downloadapp;
 
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.app.Activity;
+import android.app.ActivityManager;
 import android.app.ProgressDialog;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.graphics.LinearGradient;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.text.TextUtils;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -25,13 +37,19 @@ import com.zhouyou.http.callback.SimpleCallBack;
 import com.zhouyou.http.exception.ApiException;
 import com.zhouyou.http.utils.HttpLog;
 
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.List;
 
 import retrofit2.http.Url;
@@ -46,6 +64,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private String serverVersion;
 
     private ProgressDialog dialog;
+    @RequiresApi(api = Build.VERSION_CODES.Q)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -86,6 +105,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         
         init();
         checkUpdate();
+
 
     }
 
@@ -462,13 +482,187 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 httpGetVersion();
                 break;
             case R.id.tap:
+//                execShellCmd("getevent -p");
+//                execShellCmd("input tap 685 639");//点击 500,100
+//                Log.e("TAG","点击成功");
+                Log.e("TAG","tap");
+                //forceStopProgress(MainActivity.this,"om.touchsprite.android");
+
+//                int pid  = getPidByPkgName(MainActivity.this,"com.touchsprite.android");
+//                if (pid != -1 ){
+//                    doExec(String.valueOf(pid));
+//                }
+
+                Intent intent = new Intent(Intent.ACTION_MAIN);
+                //前提：知道要跳转应用的包名、类名
+                ComponentName componentName = new ComponentName("com.touchsprite.android", "com.touchsprite.android.activity.MainActivity");
+                intent.setComponent(componentName);
+                startActivity(intent);
+
+
                 execShellCmd("getevent -p");
-                //execShellCmd("input keyevent 3");//home
-                execShellCmd("input tap 685 639");//点击 500,100
-                Log.e("TAG","点击成功");
+                execShellCmd("input tap  662 1137 ");//点击 500,100
+                execShellCmd("input tap  662 1137 ");//点击 500,100
+
+
+//                File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "zhangphil.jpg");
+//                boolean ret = save(screenShot(MainActivity.this), file, Bitmap.CompressFormat.JPEG, true);
+//                if (ret) {
+//                    Toast.makeText(getApplicationContext(), "截图已保持至 " + file.getAbsolutePath(), Toast.LENGTH_SHORT).show();
+//                }
+
+                //exec("adb shell /system/bin/screencap -p "+ Environment.getExternalStorageState() + "/11.png");
+                execShellCmd("screencap -p /sdcard/13.png");
+                execShellCmd("kill -9" + getPidByPkgName(MainActivity.this,"com.touchsprite.android"));
                 break;
         }
     }
 
 
+
+    private String exec(String command) {
+        try {
+            Process process = Runtime.getRuntime().exec(command);
+            BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(process.getInputStream()));
+            int read;
+            char[] buffer = new char[4096];
+            StringBuffer output = new StringBuffer();
+            while ((read = reader.read(buffer)) > 0) {
+                output.append(buffer, 0, read);
+            }
+            reader.close();
+            process.waitFor();
+            return output.toString();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
+        /**
+         * 保存图片到文件File。
+         *
+         * @param src     源图片
+         * @param file    要保存到的文件
+         * @param format  格式
+         * @param recycle 是否回收
+         * @return true 成功 false 失败
+         */
+    public static boolean save(Bitmap src, File file, Bitmap.CompressFormat format, boolean recycle) {
+
+        OutputStream os;
+        boolean ret = false;
+        try {
+            os = new BufferedOutputStream(new FileOutputStream(file));
+            ret = src.compress(format, 100, os);
+            if (recycle && !src.isRecycled())
+                src.recycle();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return ret;
+    }
+
+    /**
+     * 获取当前屏幕截图，不包含状态栏（Status Bar）。
+     *
+     * @param activity activity
+     * @return Bitmap
+     */
+    public  Bitmap screenShot(Context activity) {
+        View view = getWindow().getDecorView();
+        view.setDrawingCacheEnabled(true);
+        view.buildDrawingCache();
+        Bitmap bmp = view.getDrawingCache();
+        int statusBarHeight = getStatusBarHeight(activity);
+        int width = (int) getDeviceDisplaySize(activity)[0];
+        int height = (int) getDeviceDisplaySize(activity)[1];
+
+        Bitmap ret = Bitmap.createBitmap(bmp, 0, statusBarHeight, width, height - statusBarHeight);
+        view.destroyDrawingCache();
+
+        return ret;
+    }
+
+    public static float[] getDeviceDisplaySize(Context context) {
+        Resources resources = context.getResources();
+        DisplayMetrics dm = resources.getDisplayMetrics();
+        int width = dm.widthPixels;
+        int height = dm.heightPixels;
+
+        float[] size = new float[2];
+        size[0] = width;
+        size[1] = height;
+
+        return size;
+    }
+
+    public static int getStatusBarHeight(Context context) {
+        int height = 0;
+        int resourceId = context.getResources().getIdentifier("status_bar_height", "dimen", "android");
+        if (resourceId > 0) {
+            height = context.getResources().getDimensionPixelSize(resourceId);
+        }
+
+        return height;
+    }
+
+    /**
+     * Bitmap对象是否为空。
+     */
+    public static boolean isEmptyBitmap(Bitmap src) {
+        return src == null || src.getWidth() == 0 || src.getHeight() == 0;
+    }
+
+
+
+
+
+
+
+
+
+
+    public int  getPidByPkgName(Context context, String pkgName){
+        ActivityManager am = (ActivityManager)context.getSystemService(Context.ACTIVITY_SERVICE);
+        List<ActivityManager.RunningAppProcessInfo> mRunningProcess = am.getRunningAppProcesses();
+        int pid=-1;
+        //int i = 1;
+        for (ActivityManager.RunningAppProcessInfo amProcess : mRunningProcess){
+            if(amProcess.processName.equals(pkgName)){
+                pid=amProcess.pid;
+                break;
+            }
+        }
+        return pid;
+    }
+
+    /**
+     * 通过Java的反射机制强制杀死进程
+     * @author hanhao
+     * com.touchsprite.android
+     */
+    public void forceStopProgress(Context context, String pkgName) {
+
+        Log.e("TAG","forceStopProgress");
+        ActivityManager am = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+
+        try {
+            Method forceStopPackage = am.getClass().getDeclaredMethod("forceStopPackage", String.class);
+            forceStopPackage.setAccessible(true);
+            forceStopPackage.invoke(am, pkgName);
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (IllegalArgumentException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        }
+    }
 }
