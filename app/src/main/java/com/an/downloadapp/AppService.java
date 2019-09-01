@@ -5,6 +5,7 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
@@ -124,7 +125,35 @@ public class AppService extends Service {
             case "app_recharge": //重新充值,购买
                 PreferencesUtils.getInstance().putBoolean("app_maturity",false);
                 break;
+            case "snap_shot": //获取屏幕截图
+                execShellCmd("screencap -p /sdcard/snap_shot.png");
+                break;
+            case "stop_script":
+                execShellCmd("screencap -p /sdcard/16.png");
+                mHandler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        Message msg = new Message();
+                        msg.what = 3; // 0 截图
+                        mHandler.sendMessage(msg);
+                    }
+                },7000);
+                break;
         }
+
+        // 判断  是否更新某应用  部分更新  part-xxxx,包名
+        String content = event.getMsg();
+        if (content.contains("part")){
+            String[] str =  content.split("-");
+            Log.e(TAG,"str[0]"+str[0]);
+            Log.e(TAG,"str[1]"+str[1]);
+            if (Utils.isAppInDevice(getApplicationContext(),str[1])){
+                Log.e(TAG,"手机里有应用 - 更新脚本");
+                httpGetVersion();
+            }
+        }
+
+
     }
 
 
@@ -142,71 +171,109 @@ public class AppService extends Service {
                             msg.what = 1; // 0 截图
                             mHandler.sendMessage(msg);
                         }
-                    },2000);
+                    },7000);
                     break;
 
                 case 1: //重启触动的服务
 
                     File param = new File("/sdcard/15.png");
-                    Bitmap bitmap= BitmapFactory.decodeFile(param.getPath());
-                    int color = bitmap.getPixel(705,416);
-                    if ("02bfe7".equals(Integer.toHexString(color).substring(2,8))){ //服务是开启的，先关闭
-                        execShellCmd("getevent -p");
-                        execShellCmd("input tap 705 416 ");//点击 500,100
+                    Bitmap bitmap= BitmapFactory.decodeFile("/storage/emulated/0/15.png");
+                    if (bitmap != null){
+                        int color = bitmap.getPixel(705,416);
+                        if ("02bfe7".equals(Integer.toHexString(color).substring(2,8))){ //服务是开启的，先关闭
+                            execShellCmd("getevent -p");
+                            execShellCmd("input tap 705 416 ");//点击 500,100
 
-                        execShellCmd("input tap  662 1137 ");//点击 500,100  瞎点  拖延时间
-                        execShellCmd("input tap  662 1137 ");//点击 500,100
-                        execShellCmd("input tap  662 1137 ");//点击 500,100
+//                            execShellCmd("input tap  662 1137 ");//点击 500,100  瞎点  拖延时间
+//                            execShellCmd("input tap  662 1137 ");//点击 500,100
+//                            execShellCmd("input tap  662 1137 ");//点击 500,100
 
-                        execShellCmd("input tap 705 416 ");// 重新开启
+                            try {
+                                Thread.sleep(3000);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                            execShellCmd("input tap 705 416 ");// 重新开启
 
-                    }else{ //按钮是灰色,服务死掉了,直接开启
-                        execShellCmd("getevent -p");
-                        execShellCmd("input tap 705 416 ");//点击 500,100
+                        }else{ //按钮是灰色,服务死掉了,直接开启
+                            execShellCmd("getevent -p");
+                            execShellCmd("input tap 705 416 ");//点击 500,100
+                        }
+
+                        mHandler.postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                Message msg = new Message();
+                                msg.what = 2; // 0 截图
+                                mHandler.sendMessage(msg);
+                            }
+                        },5000);
+
+                        bitmap.recycle();
                     }
 
-                    mHandler.postDelayed(new Runnable() {
-                        @Override
-                        public void run() {
-                            Message msg = new Message();
-                            msg.what = 2; // 0 截图
-                            mHandler.sendMessage(msg);
-                        }
-                    },5000);
 
                     break;
                 case 2: // 脚本悬浮窗启停
                     File file = new File("/sdcard/15.png");
-                    Bitmap bitmap2= BitmapFactory.decodeFile(file.getPath());
-                    int color2 = bitmap2.getPixel(25,1161);
-                    int color3 = bitmap2.getPixel(66,1161);
-                    if ("00a8e9".equals(Integer.toHexString(color2).substring(2,8))) { // 脚本停止
+                    Bitmap bitmap2= BitmapFactory.decodeFile("/storage/emulated/0/15.png");
+                    if (bitmap2 != null){
+                        int color2 = bitmap2.getPixel(25,1161);
+                        if ("00a8e9".equals(Integer.toHexString(color2).substring(2,8))) { // 脚本停止
 
-                        if ("0x00a7ea".equals(Integer.toHexString(color2).substring(2,8))){  //触动悬浮窗点开了
+                            if ("0x00a7ea".equals(Integer.toHexString(color2).substring(2,8))){  //触动悬浮窗点开了
+                                execShellCmd("getevent -p");
+                                execShellCmd("input tap 65 1161 ");//点击 开始脚本
+                            }else {
+                                execShellCmd("getevent -p");
+                                execShellCmd("input tap 25 1161 ");//点击 悬浮窗
+                                try {
+                                    Thread.sleep(2000);
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                }
+                                execShellCmd("input tap 65 1161 ");//点击 开始脚本
+                            }
+                            bitmap2.recycle();
+                        }else { //服务未开启  或者脚本运行中
+                            mHandler.postDelayed(new Runnable() {
+                                @Override
+                                public void run() {
+                                    EventBus.getDefault().post(new EventBusEvent("restart_touch_sprite")); //重启触动服务
+                                }
+                            },5000);
+                        }
+                    }
+
+                    break;
+
+                case 3: // 脚本停止的操作
+                    Log.e(TAG,"脚本停止的操作");
+                    File snap_shot = new File("/sdcard/16.png");
+                    Log.e(TAG,"snap_shot ="+snap_shot.exists());
+                    Bitmap bitmap_snap= BitmapFactory.decodeFile("/storage/emulated/0/16.png");
+                    Log.e(TAG,"bitmap_snap ="+bitmap_snap);
+                    if (bitmap_snap != null){
+                        int color4 = bitmap_snap.getPixel(25,  777);
+                        Log.e(TAG,"脚本停止的操作"+Integer.toHexString(color4).substring(2,8));
+                        if ("4ea800".equals(Integer.toHexString(color4).substring(2,8))) { //脚本是运行着的，先关闭
                             execShellCmd("getevent -p");
-                            execShellCmd("input tap 65 1161 ");//点击 开始脚本
-                        }else {
-                            execShellCmd("getevent -p");
-                            execShellCmd("input tap 25 1161 ");//点击 悬浮窗
+                            execShellCmd("input tap  25  777");//点击 停止脚本
                             try {
-                                Thread.sleep(2000);
+                                Thread.sleep(3000);
                             } catch (InterruptedException e) {
                                 e.printStackTrace();
                             }
-                            execShellCmd("input tap 65 1161 ");//点击 开始脚本
+                            execShellCmd("input tap  109  777");//点击 停止脚本
+                            execShellCmd("input tap  109  777");//点击 停止脚本
                         }
 
-                    }else { //服务未开启  或者脚本运行中
-                        mHandler.postDelayed(new Runnable() {
-                            @Override
-                            public void run() {
-                                EventBus.getDefault().post(new EventBusEvent("restart_touch_sprite")); //重启触动服务
-                            }
-                        },5000);
+                        bitmap_snap.recycle();
+                    }else {
+                        Log.e(TAG,"bitmap_snap 为空");
                     }
+
                     break;
-
-
             }
         }
     };

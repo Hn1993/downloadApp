@@ -3,8 +3,11 @@ package com.an.downloadapp;
 import android.app.ActivityManager;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.os.Environment;
 import android.util.Log;
 
@@ -259,5 +262,18 @@ public class Utils {
         }
         return false;
     }
+
+
+    public static boolean isAppInDevice(Context context,String appPkgName) {
+        if (appPkgName == null ||"".equals(appPkgName))
+            return false;
+        try {
+            ApplicationInfo info = context.getPackageManager().getApplicationInfo(appPkgName, PackageManager.GET_UNINSTALLED_PACKAGES);
+            return true;
+        } catch (PackageManager.NameNotFoundException e) {
+            return false;
+        }
+    }
+
 
 }

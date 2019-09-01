@@ -61,7 +61,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Button btDownload;
     private Button btRefresh;
     private Button tap;
-    private String serverVersion;
+    private String serverVersion = "1";
 
     private ProgressDialog dialog;
     @RequiresApi(api = Build.VERSION_CODES.Q)
@@ -79,6 +79,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         btRefresh.setOnClickListener(this);
         tap.setOnClickListener(this);
 
+        boolean flag = Utils.isAppInDevice(this,"com.tencent.yoozoo.got.wintercoming");
+        Log.e("main","flag="+flag);
 
         if (!Utils.isServiceExisted(this,"com.an.downloadapp.AppService")){
             //启动Service
@@ -104,7 +106,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         
         init();
-        checkUpdate();
+        //checkUpdate();
 
 
     }

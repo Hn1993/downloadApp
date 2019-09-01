@@ -1,7 +1,7 @@
 package com.an.downloadapp;
 
 public class UrlConstant {
-    public static final String BASE_URL = " http://118.25.113.151:82/";
+    public static final String BASE_URL = " http://118.25.113.151:80/";
     //public static final String BASE_URL = "http://192.168.0.110:8000/";
     //public static final String BASE_URL = "http://192.168.1.19:8000/";
     public static final String GET_VERSION = "getVersion";
